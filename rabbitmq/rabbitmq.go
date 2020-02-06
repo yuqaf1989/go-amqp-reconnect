@@ -3,6 +3,8 @@ package rabbitmq
 import (
 	"time"
 
+	"math/rand"
+
 	"sync/atomic"
 
 	"github.com/streadway/amqp"
@@ -60,6 +62,11 @@ func (c *Connection) Channel() (*Channel, error) {
 
 // Dial wrap amqp.Dial, dial and get a reconnect connection
 func Dial(url []string) (*Connection, error) {
+
+	// shuffle url list
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(url), func(i, j int) { url[i], url[j] = url[j], url[i] })
+
 	var conn *amqp.Connection
 	var err error
 	for _, u := range url {
