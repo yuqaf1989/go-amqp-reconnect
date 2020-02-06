@@ -59,8 +59,15 @@ func (c *Connection) Channel() (*Channel, error) {
 }
 
 // Dial wrap amqp.Dial, dial and get a reconnect connection
-func Dial(url string) (*Connection, error) {
-	conn, err := amqp.Dial(url)
+func Dial(url []string) (*Connection, error) {
+	var conn *amqp.Connection
+	var err error
+	for _, u := range url {
+		conn, err = amqp.Dial(u)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +77,8 @@ func Dial(url string) (*Connection, error) {
 	}
 
 	go func() {
+		urlCount := len(url)
+		urlIdx := 0
 		for {
 			reason, ok := <-connection.Connection.NotifyClose(make(chan *amqp.Error))
 			// exit this goroutine if closed by developer
@@ -84,7 +93,7 @@ func Dial(url string) (*Connection, error) {
 				// wait 1s for reconnect
 				time.Sleep(delay * time.Second)
 
-				conn, err := amqp.Dial(url)
+				conn, err := amqp.Dial(url[urlIdx])
 				if err == nil {
 					connection.Connection = conn
 					debugf("reconnect success")
@@ -92,6 +101,10 @@ func Dial(url string) (*Connection, error) {
 				}
 
 				debugf("reconnect failed, err: %v", err)
+				urlIdx += 1
+				if urlIdx == urlCount {
+					urlIdx = 0
+				}
 			}
 		}
 	}()
