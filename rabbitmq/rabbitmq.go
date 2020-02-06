@@ -101,7 +101,7 @@ func Dial(url []string) (*Connection, error) {
 				}
 
 				debugf("reconnect failed, err: %v", err)
-				urlIdx += 1
+				urlIdx++
 				if urlIdx == urlCount {
 					urlIdx = 0
 				}
